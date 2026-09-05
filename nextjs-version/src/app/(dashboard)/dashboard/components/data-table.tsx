@@ -60,6 +60,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ColumnFilterPopover } from "./column-filter-popover"
+import type { OportunidadeColuna, FiltroOperador } from "@/lib/types/oportunidades"
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, unknown>[]
@@ -79,6 +81,7 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
     pageIndex: 0,
     pageSize: 10,
   })
+  const [activeFilters, setActiveFilters] = React.useState<Record<string, { operator: FiltroOperador; values: (string | number)[] }>>({})
 
   const table = useReactTable({
     data,
@@ -104,15 +107,14 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  // Virtualization setup
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
   const { rows } = table.getRowModel()
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => 48, // Estimated row height in pixels
-    overscan: 5, // Number of rows to render outside the visible area
+    estimateSize: () => 48,
+    overscan: 5,
   })
 
   return (
@@ -231,16 +233,42 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
-                    const meta = header.column.columnDef.meta as { align?: string } | undefined
+                    const meta = header.column.columnDef.meta as { align?: string; coluna?: OportunidadeColuna } | undefined
                     const alignClass = meta?.align ?? "text-left"
+                    const coluna = meta?.coluna
                     return (
                       <TableHead key={header.id} colSpan={header.colSpan} className={`whitespace-nowrap ${alignClass}`}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
+                        {header.isPlaceholder ? null : (
+                          <div className="flex items-center gap-1">
+                            {flexRender(
                               header.column.columnDef.header,
                               header.getContext()
                             )}
+                            {coluna && (
+                              <ColumnFilterPopover
+                                coluna={coluna}
+                                activeOperator={activeFilters[coluna.key]?.operator}
+                                activeValues={activeFilters[coluna.key]?.values}
+                                onApply={(op, vals) => {
+                                  setActiveFilters(prev => ({ ...prev, [coluna.key]: { operator: op, values: vals } }))
+                                  table.setColumnFilters(prev => {
+                                    const newFilters = prev.filter(f => f.id !== coluna.key)
+                                    newFilters.push({ id: coluna.key, value: vals })
+                                    return newFilters
+                                  })
+                                }}
+                                onClear={() => {
+                                  setActiveFilters(prev => {
+                                    const next = { ...prev }
+                                    delete next[coluna.key]
+                                    return next
+                                  })
+                                  table.setColumnFilters(prev => prev.filter(f => f.id !== coluna.key))
+                                }}
+                              />
+                            )}
+                          </div>
+                        )}
                       </TableHead>
                     )
                   })}
@@ -250,7 +278,6 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
             <TableBody>
               {rows.length > 0 ? (
                 <>
-                  {/* Spacer for virtualization */}
                   <tr>
                     <td style={{ height: `${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px` }} colSpan={columns.length} />
                   </tr>
@@ -274,7 +301,6 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
                       </TableRow>
                     )
                   })}
-                  {/* Bottom spacer */}
                   <tr>
                     <td
                       style={{

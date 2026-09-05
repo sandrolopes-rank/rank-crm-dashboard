@@ -26,8 +26,13 @@ export function ResponsibleCell({ ownerId, oportunidadeId, onUpdate, perfisMap }
   // Isso evita N+1 queries e garante que o nome apareça imediatamente
   const currentOwner = perfisMap[ownerId] ?? null
 
-  const displayName = currentOwner?.nome ?? usuarioDoEmail(currentOwner?.email) ?? (ownerId ? `${ownerId.slice(0, 6)}...` : "—")
-  const initials = currentOwner ? iniciaisDoEmail(currentOwner.email) : (ownerId ? ownerId.slice(0, 2).toUpperCase() : "?")
+  const displayName = currentOwner?.nome
+    ?? usuarioDoEmail(currentOwner?.email)
+    ?? (ownerId ? `${ownerId.slice(0, 6)}...` : "—")
+
+  const initials = currentOwner
+    ? iniciaisDoEmail(currentOwner.email)
+    : (ownerId ? ownerId.slice(0, 2).toUpperCase() : "?")
 
   if (isEditing) {
     return (
@@ -36,15 +41,20 @@ export function ResponsibleCell({ ownerId, oportunidadeId, onUpdate, perfisMap }
         onValueChange={async (newOwnerId) => {
           setIsEditing(false)
           if (newOwnerId !== ownerId) {
-            // Atualiza o owner_id diretamente na tabela oportunidades
-            const supabase = createClient()
-            await supabase
-              .from("oportunidades")
-              .update({ owner_id: newOwnerId })
-              .eq("id", oportunidadeId)
+            try {
+              const supabase = createClient()
+              const { error } = await supabase
+                .from("oportunidades")
+                .update({ owner_id: newOwnerId })
+                .eq("id", oportunidadeId)
 
-            // Notifica o pai para refetch ou atualização otimista
-            await onUpdate(oportunidadeId, { owner_id: newOwnerId })
+              if (!error) {
+                // Notifica o pai para refetch ou atualização otimista
+                await onUpdate(oportunidadeId, { owner_id: newOwnerId })
+              }
+            } catch (err) {
+              console.error("Erro ao atualizar responsável:", err)
+            }
           }
         }}
         open={true}
