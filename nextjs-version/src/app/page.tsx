@@ -7,7 +7,7 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/dashboard");
+    router.replace("/oportunidades");
   }, [router]);
 
   // Show a loading state while redirecting
