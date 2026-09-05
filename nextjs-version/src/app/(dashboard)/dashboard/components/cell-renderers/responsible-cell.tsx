@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Select,
@@ -16,58 +16,18 @@ interface ResponsibleCellProps {
   ownerId: string
   oportunidadeId: string
   onUpdate: (id: string, dados: Record<string, string | number | null>) => Promise<void>
+  perfisMap: Record<string, { id: string; email: string; nome: string | null }>
 }
 
-interface UserProfile {
-  id: string
-  email: string
-  nome: string | null
-}
-
-export function ResponsibleCell({ ownerId, oportunidadeId, onUpdate }: ResponsibleCellProps) {
+export function ResponsibleCell({ ownerId, oportunidadeId, onUpdate, perfisMap }: ResponsibleCellProps) {
   const [isEditing, setIsEditing] = useState(false)
-  const [users, setUsers] = useState<UserProfile[]>([])
-  const [currentOwner, setCurrentOwner] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function loadUsers() {
-      try {
-        const supabase = createClient()
-        // Busca apenas os campos necessários e limita para performance
-        const { data, error } = await supabase
-          .from("perfis")
-          .select("id, email, nome")
-          .eq("status", "ativo")
+  // Resolve o usuário diretamente do mapa passado pelo Server Component
+  // Isso evita N+1 queries e garante que o nome apareça imediatamente
+  const currentOwner = perfisMap[ownerId] ?? null
 
-        if (!error && data) {
-          setUsers(data as UserProfile[])
-          const owner = data.find((u) => u.id === ownerId) as UserProfile | undefined
-          setCurrentOwner(owner ?? null)
-        }
-      } catch (err) {
-        console.error("Erro ao carregar usuários:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (ownerId) {
-      loadUsers()
-    } else {
-      setLoading(false)
-    }
-  }, [ownerId])
-
-  // Fallback robusto: se não encontrar o usuário, mostra parte do ID ou "—"
-  // Evita o "? —" genérico que não ajuda o usuário
-  const displayName = currentOwner?.nome
-    ?? usuarioDoEmail(currentOwner?.email)
-    ?? (loading ? "..." : ownerId ? `${ownerId.slice(0, 6)}...` : "—")
-
-  const initials = currentOwner
-    ? iniciaisDoEmail(currentOwner.email)
-    : (ownerId ? ownerId.slice(0, 2).toUpperCase() : "?")
+  const displayName = currentOwner?.nome ?? usuarioDoEmail(currentOwner?.email) ?? (ownerId ? `${ownerId.slice(0, 6)}...` : "—")
+  const initials = currentOwner ? iniciaisDoEmail(currentOwner.email) : (ownerId ? ownerId.slice(0, 2).toUpperCase() : "?")
 
   if (isEditing) {
     return (
@@ -76,22 +36,15 @@ export function ResponsibleCell({ ownerId, oportunidadeId, onUpdate }: Responsib
         onValueChange={async (newOwnerId) => {
           setIsEditing(false)
           if (newOwnerId !== ownerId) {
-            try {
-              const supabase = createClient()
-              const { error } = await supabase
-                .from("oportunidades")
-                .update({ owner_id: newOwnerId })
-                .eq("id", oportunidadeId)
+            // Atualiza o owner_id diretamente na tabela oportunidades
+            const supabase = createClient()
+            await supabase
+              .from("oportunidades")
+              .update({ owner_id: newOwnerId })
+              .eq("id", oportunidadeId)
 
-              if (!error) {
-                const newOwner = users.find((u) => u.id === newOwnerId) ?? null
-                setCurrentOwner(newOwner)
-                // Notifica o pai sobre a mudança se necessário
-                await onUpdate(oportunidadeId, { owner_id: newOwnerId })
-              }
-            } catch (err) {
-              console.error("Erro ao atualizar responsável:", err)
-            }
+            // Notifica o pai para refetch ou atualização otimista
+            await onUpdate(oportunidadeId, { owner_id: newOwnerId })
           }
         }}
         open={true}
@@ -103,7 +56,7 @@ export function ResponsibleCell({ ownerId, oportunidadeId, onUpdate }: Responsib
           <SelectValue placeholder="Selecionar..." />
         </SelectTrigger>
         <SelectContent>
-          {users.map((user) => (
+          {Object.values(perfisMap).map((user) => (
             <SelectItem key={user.id} value={user.id}>
               {user.nome ?? usuarioDoEmail(user.email) ?? user.email}
             </SelectItem>

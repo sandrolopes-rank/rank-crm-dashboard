@@ -33,9 +33,10 @@ interface OportunidadesTableProps {
   colunas: OportunidadeColuna[]
   userId: string
   isAdmin: boolean
+  perfisMap: Record<string, { id: string; email: string; nome: string | null }>
 }
 
-export function OportunidadesTable({ colunas, userId, isAdmin }: OportunidadesTableProps) {
+export function OportunidadesTable({ colunas, userId, isAdmin, perfisMap }: OportunidadesTableProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingOpp, setEditingOpp] = useState<Oportunidade | null>(null)
   const [filters, setFilters] = useState<Record<string, { operator: FiltroOperador; values: (string | number)[] }>>({})
@@ -76,6 +77,7 @@ export function OportunidadesTable({ colunas, userId, isAdmin }: OportunidadesTa
     colunas,
     isAdmin,
     onUpdate: handleUpdate,
+    perfisMap,
   })
 
   // Adiciona coluna de ações no final

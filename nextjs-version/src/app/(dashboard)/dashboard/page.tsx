@@ -16,13 +16,15 @@ export default async function Page() {
     createServerSupabase(),
   ])
 
-  // Busca usuário logado e role para controle de acesso
+  // Busca usuário logado, role e lista de perfis para controle de acesso e exibição
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   let userId = ""
   let isAdmin = false
+  let perfisMap: Record<string, { id: string; email: string; nome: string | null }> = {}
+
   if (user) {
     userId = user.id
     const { data: perfil } = await supabase
@@ -31,6 +33,19 @@ export default async function Page() {
       .eq("id", user.id)
       .single()
     isAdmin = perfil?.role === "admin"
+
+    // Busca todos os perfis ativos para resolver nomes na tabela sem N+1 queries
+    const { data: todosPerfis } = await supabase
+      .from("perfis")
+      .select("id, email, nome")
+      .eq("status", "ativo")
+
+    if (todosPerfis) {
+      perfisMap = todosPerfis.reduce((acc, p) => {
+        acc[p.id] = p
+        return acc
+      }, {} as Record<string, { id: string; email: string; nome: string | null }>)
+    }
   }
 
   // Busca todas as oportunidades para cálculo dos cards e gráfico
@@ -78,6 +93,7 @@ export default async function Page() {
           colunas={colunas}
           userId={userId}
           isAdmin={isAdmin}
+          perfisMap={perfisMap}
         />
       </div>
     </>

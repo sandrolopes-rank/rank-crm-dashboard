@@ -7,17 +7,19 @@ import { useOportunidades } from "../hooks/use-oportunidades"
 import { useDynamicColumns } from "../hooks/use-dynamic-columns"
 import { DataTable } from "./data-table"
 import { OportunidadeModal } from "./oportunidade-modal"
+import { OportunidadesToolbar } from "./oportunidades-toolbar"
 import { atualizarOportunidade } from "@/app/(dashboard)/oportunidades/actions"
 
 interface OportunidadesSectionProps {
   colunas: OportunidadeColuna[]
   userId: string
   isAdmin: boolean
+  perfisMap: Record<string, { id: string; email: string; nome: string | null }>
 }
 
-export function OportunidadesSection({ colunas, userId, isAdmin }: OportunidadesSectionProps) {
+export function OportunidadesSection({ colunas, userId, isAdmin, perfisMap }: OportunidadesSectionProps) {
   const [modalOpen, setModalOpen] = useState(false)
-  const { data, isLoading, refetch } = useOportunidades({
+  const { data, isLoading, refetch, totalCount, search, setSearch } = useOportunidades({
     colunas,
     userId,
     isAdmin,
@@ -41,6 +43,7 @@ export function OportunidadesSection({ colunas, userId, isAdmin }: Oportunidades
     colunas,
     isAdmin,
     onUpdate: handleUpdate,
+    perfisMap,
   })
 
   if (isLoading && data.length === 0) {
@@ -52,7 +55,15 @@ export function OportunidadesSection({ colunas, userId, isAdmin }: Oportunidades
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      <OportunidadesToolbar
+        search={search}
+        onSearchChange={setSearch}
+        totalCount={totalCount}
+        colunas={colunas}
+        oportunidades={data}
+        onCreateNew={() => setModalOpen(true)}
+      />
       <DataTable
         columns={columns}
         data={data}
@@ -65,6 +76,6 @@ export function OportunidadesSection({ colunas, userId, isAdmin }: Oportunidades
         oportunidade={null}
         onSuccess={refetch}
       />
-    </>
+    </div>
   )
 }

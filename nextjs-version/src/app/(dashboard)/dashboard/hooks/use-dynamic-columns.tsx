@@ -16,12 +16,14 @@ export interface UseDynamicColumnsParams {
   colunas: OportunidadeColuna[]
   isAdmin: boolean
   onUpdate: (id: string, dados: Record<string, string | number | null>) => Promise<void>
+  perfisMap: Record<string, { id: string; email: string; nome: string | null }>
 }
 
 export function useDynamicColumns({
   colunas,
   isAdmin,
   onUpdate,
+  perfisMap,
 }: UseDynamicColumnsParams) {
   return useMemo<ColumnDef<Oportunidade>[]>(() => {
     const sorted = [...colunas].sort((a, b) => a.ordem - b.ordem)
@@ -49,6 +51,7 @@ export function useDynamicColumns({
               ownerId={getValue() as string}
               oportunidadeId={row.original.id}
               onUpdate={onUpdate}
+              perfisMap={perfisMap}
             />
           ),
         }

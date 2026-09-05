@@ -24,6 +24,7 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table"
+import { useVirtualizer } from "@tanstack/react-virtual"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -101,6 +102,17 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+  })
+
+  // Virtualization setup
+  const tableContainerRef = React.useRef<HTMLDivElement>(null)
+  const { rows } = table.getRowModel()
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 48, // Estimated row height in pixels
+    overscan: 5, // Number of rows to render outside the visible area
   })
 
   return (
@@ -209,16 +221,18 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
         value="outline"
         className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
       >
-        <div className="overflow-hidden rounded-lg border">
+        <div
+          ref={tableContainerRef}
+          className="overflow-auto rounded-lg border"
+          style={{ maxHeight: "600px" }}
+        >
           <Table>
             <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     const meta = header.column.columnDef.meta as { align?: string } | undefined
-                    // Classes já vêm com !important do use-dynamic-columns.tsx
-                    // Não adicionar ! extra aqui para evitar !!text-right (inválido)
-                    const alignClass = meta?.align ?? "!text-left"
+                    const alignClass = meta?.align ?? "text-left"
                     return (
                       <TableHead key={header.id} colSpan={header.colSpan} className={`whitespace-nowrap ${alignClass}`}>
                         {header.isPlaceholder
@@ -234,23 +248,42 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      const meta = cell.column.columnDef.meta as { align?: string } | undefined
-                      const alignClass = meta?.align ?? "text-left"
-                      return (
-                        <TableCell key={cell.id} className={alignClass}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                ))
+              {rows.length > 0 ? (
+                <>
+                  {/* Spacer for virtualization */}
+                  <tr>
+                    <td style={{ height: `${rowVirtualizer.getVirtualItems()[0]?.start ?? 0}px` }} colSpan={columns.length} />
+                  </tr>
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const row = rows[virtualRow.index]
+                    return (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                        style={{ height: `${virtualRow.size}px` }}
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const meta = cell.column.columnDef.meta as { align?: string } | undefined
+                          const alignClass = meta?.align ?? "text-left"
+                          return (
+                            <TableCell key={cell.id} className={alignClass}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          )
+                        })}
+                      </TableRow>
+                    )
+                  })}
+                  {/* Bottom spacer */}
+                  <tr>
+                    <td
+                      style={{
+                        height: `${rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1]?.end ?? 0)}px`,
+                      }}
+                      colSpan={columns.length}
+                    />
+                  </tr>
+                </>
               ) : (
                 <TableRow>
                   <TableCell
