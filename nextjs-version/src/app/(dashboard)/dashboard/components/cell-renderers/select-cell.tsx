@@ -17,7 +17,7 @@ interface SelectCellProps {
   onUpdate: (value: string | null) => Promise<void>
 }
 
-// Paleta de cores automática para opções sem cor configurada
+// Paleta de cores automática para opções sem cor configurada (classes Tailwind seguras)
 const PALETTE = [
   "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
@@ -29,10 +29,23 @@ const PALETTE = [
   "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
 ]
 
-function getCorOpcao(opcaoId: string, opcoes: { id: string; label: string; cor?: string }[], index: number): string {
+interface CorOpcaoResult {
+  className?: string
+  style?: React.CSSProperties
+}
+
+/**
+ * Retorna classes Tailwind da paleta quando a opção não tem cor customizada.
+ * Quando tem cor customizada (vinda do banco), usa style inline pois classes
+ * Tailwind dinâmicas não são geradas pelo purger.
+ */
+function getCorOpcao(opcaoId: string, opcoes: { id: string; label: string; cor?: string }[], index: number): CorOpcaoResult {
   const opcao = opcoes.find((o) => o.id === opcaoId)
-  if (opcao?.cor) return opcao.cor
-  return PALETTE[index % PALETTE.length]
+  if (opcao?.cor) {
+    // cor customizada do banco → usar como style inline
+    return { style: { backgroundColor: opcao.cor, color: "#fff" } }
+  }
+  return { className: PALETTE[index % PALETTE.length] }
 }
 
 export function SelectCell({ value, coluna, onUpdate }: SelectCellProps) {
@@ -43,7 +56,7 @@ export function SelectCell({ value, coluna, onUpdate }: SelectCellProps) {
 
   const selectedOpcao = opcoes.find((o) => o.id === value)
   const selectedIndex = opcoes.findIndex((o) => o.id === value)
-  const badgeClass = value ? getCorOpcao(value, opcoes, selectedIndex >= 0 ? selectedIndex : 0) : ""
+  const badgeStyle = value ? getCorOpcao(value, opcoes, selectedIndex >= 0 ? selectedIndex : 0) : {}
 
   if (isEditing) {
     return (
@@ -86,7 +99,11 @@ export function SelectCell({ value, coluna, onUpdate }: SelectCellProps) {
       className="flex items-center cursor-pointer rounded px-1 py-0.5 hover:bg-muted/50 h-full"
     >
       {selectedOpcao ? (
-        <Badge variant="outline" className={`${badgeClass} border-transparent font-medium`}>
+        <Badge
+          variant="outline"
+          className={`${badgeStyle.className ?? ""} border-transparent font-medium`}
+          style={badgeStyle.style}
+        >
           {selectedOpcao.label}
         </Badge>
       ) : (
