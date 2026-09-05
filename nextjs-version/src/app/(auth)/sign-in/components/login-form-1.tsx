@@ -71,7 +71,7 @@ export function LoginForm1({
       return
     }
 
-    router.push("/oportunidades")
+    router.push("/dashboard")
     router.refresh()
     setLoading(false)
   }

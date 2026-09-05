@@ -2,24 +2,17 @@
 
 import * as React from "react"
 import {
-  LayoutPanelLeft,
   LayoutDashboard,
   Mail,
   CheckSquare,
   MessageCircle,
   Calendar,
-  Shield,
-  AlertTriangle,
   Settings,
-  HelpCircle,
-  CreditCard,
-  LayoutTemplate,
   Users,
 } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 import { SidebarNotification } from "@/components/sidebar-notification"
-
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -40,17 +33,12 @@ const data = {
   },
   navGroups: [
     {
-      label: "Principal",
+      label: "Dashboard",
       items: [
         {
           title: "Oportunidades",
-          url: "/oportunidades",
+          url: "/dashboard",
           icon: LayoutDashboard,
-        },
-        {
-          title: "Dashboard",
-          url: "/oportunidades/dashboard",
-          icon: LayoutPanelLeft,
         },
       ],
     },
@@ -67,36 +55,11 @@ const data = {
     {
       label: "Em Breve",
       items: [
-        {
-          title: "E-mail",
-          url: "#",
-          icon: Mail,
-          disabled: true,
-        },
-        {
-          title: "Tarefas",
-          url: "#",
-          icon: CheckSquare,
-          disabled: true,
-        },
-        {
-          title: "Chat",
-          url: "#",
-          icon: MessageCircle,
-          disabled: true,
-        },
-        {
-          title: "Calendário",
-          url: "#",
-          icon: Calendar,
-          disabled: true,
-        },
-        {
-          title: "Usuários",
-          url: "#",
-          icon: Users,
-          disabled: true,
-        },
+        { title: "E-mail", url: "#", icon: Mail, disabled: true },
+        { title: "Tarefas", url: "#", icon: CheckSquare, disabled: true },
+        { title: "Chat", url: "#", icon: MessageCircle, disabled: true },
+        { title: "Calendário", url: "#", icon: Calendar, disabled: true },
+        { title: "Usuários", url: "#", icon: Users, disabled: true },
       ],
     },
   ],
@@ -109,7 +72,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/oportunidades">
+              <Link href="/dashboard">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Logo size={24} className="text-current" />
                 </div>
