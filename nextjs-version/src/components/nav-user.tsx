@@ -1,19 +1,16 @@
 "use client"
 
 import {
-  CreditCard,
   EllipsisVertical,
   LogOut,
-  BellDot,
-  CircleUser,
 } from "lucide-react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 
 import { Logo } from "@/components/logo"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -25,6 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { createClient } from "@/lib/supabase"
 
 export function NavUser({
   user,
@@ -36,6 +34,16 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const [signingOut, setSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
 
   return (
     <SidebarMenu>
@@ -47,7 +55,7 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg">
-                < Logo size={28} />
+                <Logo size={28} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -67,7 +75,7 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <div className="h-8 w-8 rounded-lg">
-                  < Logo size={28} />
+                  <Logo size={28} />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -78,32 +86,13 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/account">
-                  <CircleUser />
-                  Account
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/billing">
-                  <CreditCard />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href="/settings/notifications">
-                  <BellDot />
-                  Notifications
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href="/sign-in">
-                <LogOut />
-                Log out
-              </Link>
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive"
+              onClick={handleSignOut}
+              disabled={signingOut}
+            >
+              <LogOut />
+              {signingOut ? "Saindo..." : "Sair"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

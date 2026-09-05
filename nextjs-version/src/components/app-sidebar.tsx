@@ -15,6 +15,8 @@ import { Logo } from "@/components/logo"
 import { SidebarNotification } from "@/components/sidebar-notification"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
+import { usePerfil } from "@/hooks/use-perfil"
+import { ehAdmin } from "@/lib/types/perfis"
 import {
   Sidebar,
   SidebarContent,
@@ -25,13 +27,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const data = {
-  user: {
-    name: "Rank CRM",
-    email: "usuario@rankmyapp.com.br",
-    avatar: "",
-  },
-  navGroups: [
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { perfil, loading } = usePerfil()
+  const isAdmin = ehAdmin(perfil)
+
+  const navGroups = [
     {
       label: "Dashboard",
       items: [
@@ -42,16 +42,20 @@ const data = {
         },
       ],
     },
-    {
-      label: "Administração",
-      items: [
-        {
-          title: "Configurações",
-          url: "/configuracoes",
-          icon: Settings,
-        },
-      ],
-    },
+    ...(isAdmin
+      ? [
+          {
+            label: "Administração",
+            items: [
+              {
+                title: "Configurações",
+                url: "/configuracoes",
+                icon: Settings,
+              },
+            ],
+          },
+        ]
+      : []),
     {
       label: "Em Breve",
       items: [
@@ -62,10 +66,14 @@ const data = {
         { title: "Usuários", url: "#", icon: Users, disabled: true },
       ],
     },
-  ],
-}
+  ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const userDisplay = {
+    name: perfil?.nome ?? perfil?.email?.split("@")[0] ?? "Rank CRM",
+    email: perfil?.email ?? "usuario@rankmyapp.com.br",
+    avatar: "",
+  }
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -86,13 +94,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {data.navGroups.map((group) => (
+        {navGroups.map((group) => (
           <NavMain key={group.label} label={group.label} items={group.items} />
         ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarNotification />
-        <NavUser user={data.user} />
+        {!loading && <NavUser user={userDisplay} />}
       </SidebarFooter>
     </Sidebar>
   )
