@@ -1,14 +1,19 @@
 "use client"
 
 import * as React from "react"
-import { Button } from "@/components/ui/button"
+import { Settings } from "lucide-react"
+import Link from "next/link"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { CommandSearch, SearchTrigger } from "@/components/command-search"
 import { ModeToggle } from "@/components/mode-toggle"
+import { usePerfil } from "@/hooks/use-perfil"
+import { ehAdmin } from "@/lib/types/perfis"
 
 export function SiteHeader() {
   const [searchOpen, setSearchOpen] = React.useState(false)
+  const { perfil } = usePerfil()
+  const isAdmin = ehAdmin(perfil)
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -35,6 +40,15 @@ export function SiteHeader() {
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
+            {isAdmin && (
+              <Link
+                href="/configuracoes"
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0"
+                aria-label="Configurações"
+              >
+                <Settings className="h-4 w-4" />
+              </Link>
+            )}
             <ModeToggle />
           </div>
         </div>

@@ -7,7 +7,6 @@ import {
   CheckSquare,
   MessageCircle,
   Calendar,
-  Settings,
   Users,
 } from "lucide-react"
 import Link from "next/link"
@@ -16,7 +15,6 @@ import { SidebarNotification } from "@/components/sidebar-notification"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { usePerfil } from "@/hooks/use-perfil"
-import { ehAdmin } from "@/lib/types/perfis"
 import {
   Sidebar,
   SidebarContent,
@@ -27,9 +25,13 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  onOpenCustomizer,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  onOpenCustomizer?: () => void
+}) {
   const { perfil, loading } = usePerfil()
-  const isAdmin = ehAdmin(perfil)
 
   const navGroups = [
     {
@@ -42,20 +44,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
       ],
     },
-    ...(isAdmin
-      ? [
-          {
-            label: "Administração",
-            items: [
-              {
-                title: "Configurações",
-                url: "/configuracoes",
-                icon: Settings,
-              },
-            ],
-          },
-        ]
-      : []),
     {
       label: "Em Breve",
       items: [
@@ -100,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarNotification />
-        {!loading && <NavUser user={userDisplay} />}
+        {!loading && <NavUser user={userDisplay} onOpenCustomizer={onOpenCustomizer} />}
       </SidebarFooter>
     </Sidebar>
   )

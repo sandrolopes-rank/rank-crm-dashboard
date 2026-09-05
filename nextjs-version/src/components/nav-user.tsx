@@ -3,6 +3,7 @@
 import {
   EllipsisVertical,
   LogOut,
+  Palette,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -26,12 +27,14 @@ import { createClient } from "@/lib/supabase"
 
 export function NavUser({
   user,
+  onOpenCustomizer,
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
+  onOpenCustomizer?: () => void
 }) {
   const { isMobile } = useSidebar()
   const router = useRouter()
@@ -85,6 +88,14 @@ export function NavUser({
                 </div>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={onOpenCustomizer}
+            >
+              <Palette />
+              Aparência
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer text-destructive focus:text-destructive"

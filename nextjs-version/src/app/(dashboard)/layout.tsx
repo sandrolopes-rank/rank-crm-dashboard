@@ -5,8 +5,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { ThemeCustomizer, ThemeCustomizerTrigger } from "@/components/theme-customizer";
-import { UpgradeToProButton } from "@/components/upgrade-to-pro-button";
+import { ThemeCustomizer } from "@/components/theme-customizer";
 import { useSidebarConfig } from "@/hooks/use-sidebar-config";
 
 export default function DashboardLayout({
@@ -32,6 +31,7 @@ export default function DashboardLayout({
             variant={config.variant}
             collapsible={config.collapsible}
             side={config.side}
+            onOpenCustomizer={() => setThemeCustomizerOpen(true)}
           />
           <SidebarInset>
             <SiteHeader />
@@ -62,17 +62,15 @@ export default function DashboardLayout({
             variant={config.variant}
             collapsible={config.collapsible}
             side={config.side}
+            onOpenCustomizer={() => setThemeCustomizerOpen(true)}
           />
         </>
       )}
 
-      {/* Theme Customizer */}
-      <ThemeCustomizerTrigger onClick={() => setThemeCustomizerOpen(true)} />
       <ThemeCustomizer
         open={themeCustomizerOpen}
         onOpenChange={setThemeCustomizerOpen}
       />
-      <UpgradeToProButton />
     </SidebarProvider>
   );
 }
