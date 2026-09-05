@@ -84,6 +84,7 @@ export function useDynamicColumns({
               <CurrencyCell
                 value={value as number | null}
                 onUpdate={(v) => onUpdate(oppId, { [coluna.key]: v })}
+                threshold={"regra" in coluna.config ? (coluna.config as import("@/lib/types/oportunidades").ColunaConfigMonetario).regra : undefined}
               />
             )
           case "select":
@@ -102,7 +103,12 @@ export function useDynamicColumns({
               />
             )
           case "calculo":
-            return <CalculationCell value={value as number | null} />
+            return (
+              <CalculationCell
+                value={value as number | null}
+                threshold={"regra" in coluna.config ? (coluna.config as import("@/lib/types/oportunidades").ColunaConfigCalculo).regra : undefined}
+              />
+            )
           default:
             return <span>{renderizarValorOportunidade(coluna, value)}</span>
         }

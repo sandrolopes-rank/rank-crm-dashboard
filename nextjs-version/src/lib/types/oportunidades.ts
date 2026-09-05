@@ -12,10 +12,24 @@ export interface ColunaConfigSelect {
 export interface ColunaConfigCalculo {
   /** Referencia outras colunas pela própria `key`, entre chaves — ex.: "{valor_atual} * {probabilidade}". */
   formula: string;
+  regra?: RuleThreshold;
+}
+
+export type RuleMode = "threshold" | "sign";
+
+export interface RuleThreshold {
+  /** Modo de avaliação: "threshold" usa limites absolutos, "sign" usa o sinal do valor (>0 verde, <0 vermelho, 0 amarelo). Padrão: "threshold". */
+  mode?: RuleMode;
+  /** Valor mínimo para considerar "bom" (verde). Ignorado quando mode === "sign". */
+  goodAbove?: number;
+  /** Valor máximo para considerar "ruim" (vermelho). Abaixo disso é vermelho. Ignorado quando mode === "sign". */
+  badBelow?: number;
 }
 
 export type ColunaConfigTexto = Record<string, never>;
-export type ColunaConfigMonetario = Record<string, never>;
+export interface ColunaConfigMonetario {
+  regra?: RuleThreshold;
+}
 export type ColunaConfigData = Record<string, never>;
 
 export type ColunaConfig =

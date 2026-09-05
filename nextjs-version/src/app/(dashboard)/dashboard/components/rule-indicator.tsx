@@ -2,13 +2,7 @@
 
 import { TrendingDown, TrendingUp, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-export interface RuleThreshold {
-  /** Valor mínimo para considerar "bom" (verde). */
-  goodAbove?: number
-  /** Valor máximo para considerar "ruim" (vermelho). Abaixo disso é vermelho. */
-  badBelow?: number
-}
+import type { RuleThreshold } from "@/lib/types/oportunidades"
 
 interface RuleIndicatorProps {
   value: number | null
@@ -17,23 +11,28 @@ interface RuleIndicatorProps {
 }
 
 /**
- * Indicador visual baseado em regras simples.
- * - Verde + TrendingUp: valor >= goodAbove
- * - Vermelho + TrendingDown: valor <= badBelow
- * - Amarelo + Minus: entre os dois thresholds ou sem threshold definido
- * - Sem valor: não renderiza nada
+ * Indicador visual baseado em regras.
+ * - mode === "sign": >0 verde, <0 vermelho, 0 amarelo
+ * - mode === "threshold" (padrão): >= goodAbove verde, <= badBelow vermelho, entre = amarelo
+ * - Sem valor ou sem threshold: não renderiza
  */
 export function RuleIndicator({ value, threshold, className }: RuleIndicatorProps) {
   if (value == null || !threshold) return null
 
-  const { goodAbove, badBelow } = threshold
+  const mode = threshold.mode ?? "threshold"
 
   let variant: "good" | "bad" | "neutral" = "neutral"
 
-  if (goodAbove != null && value >= goodAbove) {
-    variant = "good"
-  } else if (badBelow != null && value <= badBelow) {
-    variant = "bad"
+  if (mode === "sign") {
+    if (value > 0) variant = "good"
+    else if (value < 0) variant = "bad"
+  } else {
+    const { goodAbove, badBelow } = threshold
+    if (goodAbove != null && value >= goodAbove) {
+      variant = "good"
+    } else if (badBelow != null && value <= badBelow) {
+      variant = "bad"
+    }
   }
 
   const config = {

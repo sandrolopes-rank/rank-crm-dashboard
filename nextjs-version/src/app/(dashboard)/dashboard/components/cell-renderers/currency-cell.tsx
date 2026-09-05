@@ -3,13 +3,16 @@
 import { useState, useRef, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { formatarMoeda } from "@/lib/format"
+import { RuleIndicator } from "../rule-indicator"
+import type { RuleThreshold } from "@/lib/types/oportunidades"
 
 interface CurrencyCellProps {
   value: number | null
   onUpdate: (value: number | null) => Promise<void>
+  threshold?: RuleThreshold
 }
 
-export function CurrencyCell({ value, onUpdate }: CurrencyCellProps) {
+export function CurrencyCell({ value, onUpdate, threshold }: CurrencyCellProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(value?.toString() ?? "")
   const inputRef = useRef<HTMLInputElement>(null)
@@ -72,9 +75,10 @@ export function CurrencyCell({ value, onUpdate }: CurrencyCellProps) {
         setEditValue(value?.toString() ?? "")
         setIsEditing(true)
       }}
-      className="flex items-center cursor-pointer rounded px-1 py-0.5 tabular-nums hover:bg-muted/50 h-full"
+      className="flex items-center gap-1 cursor-pointer rounded px-1 py-0.5 tabular-nums hover:bg-muted/50 h-full"
     >
       {displayValue}
+      <RuleIndicator value={value} threshold={threshold} />
     </span>
   )
 }
