@@ -34,9 +34,9 @@ export function usePerfil() {
       setPerfil({
         id: data.id,
         email: user.email ?? "",
-        nome: data.nome ?? null,
-        papel: data.papel as "admin" | "membro",
-        status: data.status as "ativo" | "inativo",
+        nome: data.nome ?? data.name ?? null,
+        papel: (data.papel ?? data.role) as "admin" | "membro",
+        status: (data.status ?? "ativo") as "ativo" | "inativo",
         criado_em: data.criado_em ?? data.created_at ?? "",
         atualizado_em: data.atualizado_em ?? data.updated_at ?? null,
       })
