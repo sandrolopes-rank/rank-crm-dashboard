@@ -53,21 +53,18 @@ export function NavUser({
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg">
+            <div role="button" tabIndex={0} className="flex w-full items-center gap-2 rounded-md p-2 text-left text-sm cursor-pointer hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground outline-none">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
                 <Logo size={28} />
               </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="text-muted-foreground truncate text-xs">
                   {user.email}
                 </span>
               </div>
-              <EllipsisVertical className="ml-auto size-4" />
-            </SidebarMenuButton>
+              <EllipsisVertical className="ml-auto size-4 shrink-0" />
+            </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
@@ -91,7 +88,11 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="cursor-pointer"
-              onClick={onOpenCustomizer}
+              onSelect={() => {
+                setTimeout(() => {
+                  onOpenCustomizer?.()
+                }, 300)
+              }}
             >
               <Palette />
               Aparência

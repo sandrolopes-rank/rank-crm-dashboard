@@ -11,10 +11,10 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
-import { SidebarNotification } from "@/components/sidebar-notification"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { usePerfil } from "@/hooks/use-perfil"
+import { ehAdmin } from "@/lib/types/perfis"
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
+// Rank CRM Sidebar Component
 export function AppSidebar({
   onOpenCustomizer,
   ...props
@@ -32,6 +33,7 @@ export function AppSidebar({
   onOpenCustomizer?: () => void
 }) {
   const { perfil, loading } = usePerfil()
+  const isAdmin = ehAdmin(perfil)
 
   const navGroups = [
     {
@@ -87,8 +89,9 @@ export function AppSidebar({
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <SidebarNotification />
-        {!loading && <NavUser user={userDisplay} onOpenCustomizer={onOpenCustomizer} />}
+        {!loading && (
+          <NavUser user={userDisplay} onOpenCustomizer={onOpenCustomizer} />
+        )}
       </SidebarFooter>
     </Sidebar>
   )

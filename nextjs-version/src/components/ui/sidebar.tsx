@@ -162,11 +162,14 @@ function Sidebar({
   collapsible = "offcanvas",
   className,
   children,
+  // Filter out custom props that should not leak to the DOM
+  onOpenCustomizer: _onOpenCustomizer,
   ...props
 }: React.ComponentProps<"div"> & {
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
+  onOpenCustomizer?: () => void
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 

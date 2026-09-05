@@ -1,13 +1,60 @@
 import { ChartAreaInteractive } from "./components/chart-area-interactive"
-import { DataTable } from "./components/data-table"
 import { SectionCards } from "./components/section-cards"
+import { OportunidadesSection } from "./components/oportunidades-section"
 
-import data from "./data/data.json"
-import pastPerformanceData from "./data/past-performance-data.json"
-import keyPersonnelData from "./data/key-personnel-data.json"
-import focusDocumentsData from "./data/focus-documents-data.json"
+import { listarColunasOportunidades, listarCardsOportunidades, listarFiltrosDeCards } from "@/lib/oportunidades-data"
+import { calcularCards, calcularSerieTempo } from "@/lib/cards"
+import { createServerSupabase } from "@/lib/supabase-server"
+import type { Oportunidade } from "@/lib/types/oportunidades"
 
-export default function Page() {
+export default async function Page() {
+  // Busca metadados e dados reais do Supabase para os cards e gráfico
+  const [colunas, cardsConfig, filtros, supabase] = await Promise.all([
+    listarColunasOportunidades(),
+    listarCardsOportunidades(),
+    listarFiltrosDeCards(),
+    createServerSupabase(),
+  ])
+
+  // Busca usuário logado e role para controle de acesso
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let userId = ""
+  let isAdmin = false
+  if (user) {
+    userId = user.id
+    const { data: perfil } = await supabase
+      .from("perfis")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    isAdmin = perfil?.role === "admin"
+  }
+
+  // Busca todas as oportunidades para cálculo dos cards e gráfico
+  // Nota: em produção com muitos dados, isso deve ser otimizado com query agregada no banco
+  const { data: oportunidadesRaw } = await supabase
+    .from("oportunidades")
+    .select("*")
+
+  const oportunidades = (oportunidadesRaw ?? []) as Oportunidade[]
+
+  // Calcula os cards usando o motor da Fase 3
+  const cardsCalculados = calcularCards(cardsConfig, colunas, filtros, oportunidades)
+
+  // Encontra o primeiro card do tipo "linha" para alimentar o gráfico
+  const cardLinha = cardsConfig.find((c) => c.tipo_visualizacao === "linha")
+  const colunaReferenciaGlobal = colunas.find((c) => c.eh_data_referencia) ?? null
+  const serieTemporal = cardLinha
+    ? calcularSerieTempo(cardLinha, colunas, filtros, oportunidades, colunaReferenciaGlobal)
+    : []
+  const tituloGrafico = cardLinha?.label ?? "Evolução"
+  const labelColunaGrafico = cardLinha
+    ? colunas.find((c) => c.id === cardLinha.coluna_id)?.label ?? "Valor"
+    : "Valor"
+
   return (
     <>
       {/* Page Title and Description */}
@@ -19,15 +66,18 @@ export default function Page() {
       </div>
 
       <div className="@container/main px-4 lg:px-6 space-y-6">
-        <SectionCards />
-        <ChartAreaInteractive />
+        <SectionCards cards={cardsCalculados} />
+        <ChartAreaInteractive
+          serieTemporal={serieTemporal}
+          titulo={tituloGrafico}
+          labelColuna={labelColunaGrafico}
+        />
       </div>
       <div className="@container/main">
-        <DataTable
-          data={data}
-          pastPerformanceData={pastPerformanceData}
-          keyPersonnelData={keyPersonnelData}
-          focusDocumentsData={focusDocumentsData}
+        <OportunidadesSection
+          colunas={colunas}
+          userId={userId}
+          isAdmin={isAdmin}
         />
       </div>
     </>
