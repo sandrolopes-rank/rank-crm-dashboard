@@ -2,13 +2,13 @@
 
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
-import type { OportunidadeColuna } from "@/lib/types/oportunidades"
-import { useOportunidades } from "../hooks/use-oportunidades"
+import type { Oportunidade, OportunidadeColuna } from "@/lib/types/oportunidades"
+import { useOportunidades, type ActiveFilters } from "../hooks/use-oportunidades"
 import { useDynamicColumns } from "../hooks/use-dynamic-columns"
 import { DataTable } from "./data-table"
 import { OportunidadeModal } from "./oportunidade-modal"
 import { OportunidadesToolbar } from "./oportunidades-toolbar"
-import { atualizarOportunidade } from "@/app/(dashboard)/oportunidades/actions"
+import { atualizarOportunidade, excluirOportunidade } from "@/app/(dashboard)/oportunidades/actions"
 
 interface OportunidadesSectionProps {
   colunas: OportunidadeColuna[]
@@ -19,11 +19,15 @@ interface OportunidadesSectionProps {
 
 export function OportunidadesSection({ colunas, userId, isAdmin, perfisMap }: OportunidadesSectionProps) {
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingOportunidade, setEditingOportunidade] = useState<Oportunidade | null>(null)
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({})
+
   const { data, isLoading, refetch, totalCount, search, setSearch } = useOportunidades({
     colunas,
     userId,
     isAdmin,
     pageSize: 20,
+    activeFilters,
   })
 
   const handleUpdate = useCallback(
@@ -38,6 +42,29 @@ export function OportunidadesSection({ colunas, userId, isAdmin, perfisMap }: Op
     },
     [refetch]
   )
+
+  const handleDelete = useCallback(
+    async (row: Oportunidade) => {
+      const result = await excluirOportunidade(row.id)
+      if (!result.ok) {
+        toast.error(result.erro)
+        return
+      }
+      toast.success("Oportunidade excluída!")
+      refetch()
+    },
+    [refetch]
+  )
+
+  const handleEdit = useCallback((row: Oportunidade) => {
+    setEditingOportunidade(row)
+    setModalOpen(true)
+  }, [])
+
+  const handleCreateNew = useCallback(() => {
+    setEditingOportunidade(null)
+    setModalOpen(true)
+  }, [])
 
   const columns = useDynamicColumns({
     colunas,
@@ -62,18 +89,24 @@ export function OportunidadesSection({ colunas, userId, isAdmin, perfisMap }: Op
         totalCount={totalCount}
         colunas={colunas}
         oportunidades={data}
-        onCreateNew={() => setModalOpen(true)}
+        onCreateNew={handleCreateNew}
       />
       <DataTable
         columns={columns}
         data={data}
-        onAddNew={() => setModalOpen(true)}
+        onAddNew={handleCreateNew}
+        onFiltersChange={setActiveFilters}
+        onEditRow={handleEdit}
+        onDeleteRow={handleDelete}
       />
       <OportunidadeModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open)
+          if (!open) setEditingOportunidade(null)
+        }}
         colunas={colunas}
-        oportunidade={null}
+        oportunidade={editingOportunidade}
         onSuccess={refetch}
       />
     </div>

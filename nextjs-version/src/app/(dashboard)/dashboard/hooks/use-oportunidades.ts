@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { createClient } from "@/lib/supabase"
 import { chaveCache, lerCache, salvarCache } from "@/lib/cache"
-import type { Oportunidade, OportunidadeColuna } from "@/lib/types/oportunidades"
+import type { Oportunidade, OportunidadeColuna, FiltroOperador } from "@/lib/types/oportunidades"
 import { resolverValoresLinha } from "@/lib/formula"
+
+export type ActiveFilters = Record<string, { operator: FiltroOperador; values: (string | number)[] }>
 
 export interface UseOportunidadesParams {
   colunas: OportunidadeColuna[]
   userId: string
   isAdmin: boolean
   pageSize?: number
+  activeFilters?: ActiveFilters
 }
 
 export interface UseOportunidadesResult {
@@ -38,6 +41,7 @@ export function useOportunidades({
   userId,
   isAdmin,
   pageSize = 20,
+  activeFilters,
 }: UseOportunidadesParams): UseOportunidadesResult {
   const [data, setData] = useState<Oportunidade[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -82,6 +86,83 @@ export function useOportunidades({
         // Se não é admin, filtra apenas as próprias oportunidades
         if (!isAdmin) {
           query = query.eq("owner_id", userId)
+        }
+
+        // Busca textual — procura em todos os campos textuais do jsonb "dados"
+        if (search.trim()) {
+          const termo = search.trim()
+          // Busca ILIKE em cada coluna de tipo texto/select via jsonb
+          const colunasTexto = colunas.filter((c) => c.tipo === "texto" || c.tipo === "select")
+          if (colunasTexto.length > 0) {
+            const orConditions = colunasTexto
+              .map((c) => `dados->>${c.key}.ilike.%${termo}%`)
+              .join(",")
+            query = query.or(orConditions)
+          } else {
+            // Fallback: busca em todos os valores do jsonb
+            query = query.ilike("dados::text", `%${termo}%`)
+          }
+        }
+
+        // Filtros por coluna server-side
+        if (activeFilters && Object.keys(activeFilters).length > 0) {
+          for (const [colKey, filter] of Object.entries(activeFilters)) {
+            const { operator, values } = filter
+            const coluna = colunas.find((c) => c.key === colKey)
+            if (!coluna) continue
+
+            const jsonPath = `dados->>${colKey}`
+
+            switch (operator) {
+              case "eq":
+                query = query.eq(jsonPath, values[0])
+                break
+              case "neq":
+                query = query.neq(jsonPath, values[0])
+                break
+              case "gt":
+                query = query.gt(jsonPath, values[0])
+                break
+              case "gte":
+                query = query.gte(jsonPath, values[0])
+                break
+              case "lt":
+                query = query.lt(jsonPath, values[0])
+                break
+              case "lte":
+                query = query.lte(jsonPath, values[0])
+                break
+              case "contains":
+                query = query.ilike(jsonPath, `%${values[0]}%`)
+                break
+              case "not_contains":
+                query = query.not("dados->>" + colKey as any, "ilike", `%${values[0]}%`)
+                break
+              case "in":
+                query = query.in(jsonPath, values)
+                break
+              case "not_in":
+                // Supabase não tem .not.in() direto — usa OR com neq
+                for (const v of values) {
+                  query = query.neq(jsonPath, v)
+                }
+                break
+              case "is_empty":
+                query = query.is(jsonPath, null)
+                break
+              case "is_not_empty":
+                query = query.not(jsonPath as any, "is", null)
+                break
+              case "mes_atual":
+              case "mes_anterior":
+              case "mes_proximo":
+              case "proximos_meses":
+              case "ultimos_meses":
+                // Filtros de data relativos — aplicados client-side por complexidade
+                // O TanStack Table já filtra localmente como fallback
+                break
+            }
+          }
         }
 
         // Paginação server-side
@@ -134,7 +215,7 @@ export function useOportunidades({
     return () => {
       cancelled = true
     }
-  }, [colunas, userId, isAdmin, pageSize, page, search, refreshKey, cacheKey])
+  }, [colunas, userId, isAdmin, pageSize, page, search, refreshKey, cacheKey, activeFilters])
 
   return {
     data,

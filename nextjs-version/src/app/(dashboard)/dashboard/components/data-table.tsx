@@ -8,7 +8,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Columns2,
+  MoreHorizontal,
+  Pencil,
   Plus,
+  Trash2,
 } from "lucide-react"
 import {
   type ColumnDef,
@@ -30,8 +33,19 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -67,9 +81,12 @@ interface DataTableProps<TData> {
   columns: ColumnDef<TData, unknown>[]
   data: TData[]
   onAddNew?: () => void
+  onFiltersChange?: (filters: Record<string, { operator: FiltroOperador; values: (string | number)[] }>) => void
+  onEditRow?: (row: TData) => void
+  onDeleteRow?: (row: TData) => void
 }
 
-export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TData>) {
+export function DataTable<TData>({ columns, data, onAddNew, onFiltersChange, onEditRow, onDeleteRow }: DataTableProps<TData>) {
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -107,6 +124,14 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
+  // Notifica o pai quando filtros mudam (para busca server-side)
+  React.useEffect(() => {
+    onFiltersChange?.(activeFilters)
+  }, [activeFilters, onFiltersChange])
+
+  // Estado para diálogo de confirmação de exclusão
+  const [deleteTarget, setDeleteTarget] = React.useState<TData | null>(null)
+
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
   const { rows } = table.getRowModel()
 
@@ -118,6 +143,7 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
   })
 
   return (
+    <>
     <Tabs
       defaultValue="outline"
       className="w-full flex-col justify-start gap-6"
@@ -298,6 +324,31 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
                             </TableCell>
                           )
                         })}
+                        {(onEditRow || onDeleteRow) && (
+                          <TableCell className="text-right w-10">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-7">
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {onEditRow && (
+                                  <DropdownMenuItem onClick={() => onEditRow(row.original)} className="cursor-pointer">
+                                    <Pencil className="size-3.5 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
+                                {onDeleteRow && (
+                                  <DropdownMenuItem onClick={() => setDeleteTarget(row.original)} className="cursor-pointer text-destructive focus:text-destructive">
+                                    <Trash2 className="size-3.5 mr-2" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        )}
                       </TableRow>
                     )
                   })}
@@ -417,5 +468,30 @@ export function DataTable<TData>({ columns, data, onAddNew }: DataTableProps<TDa
         </div>
       </TabsContent>
     </Tabs>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open: boolean) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir oportunidade</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A oportunidade será permanentemente removida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget && onDeleteRow) {
+                  onDeleteRow(deleteTarget)
+                  setDeleteTarget(null)
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
