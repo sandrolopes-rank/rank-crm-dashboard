@@ -1,58 +1,48 @@
-"use client"
+import { redirect } from "next/navigation"
+import { createServerSupabase } from "@/lib/supabase-server"
+import { listarColunasOportunidades, listarCardsOportunidades, listarFiltrosDeCards } from "@/lib/oportunidades-data"
+import type { OportunidadeCardFiltro } from "@/lib/types/oportunidades"
+import { ConfiguracoesClient } from "./components/configuracoes-client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { usePerfil } from "@/hooks/use-perfil"
-import { ehAdmin } from "@/lib/types/perfis"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+export default async function ConfiguracoesPage() {
+  const supabase = await createServerSupabase()
 
-export default function ConfiguracoesPage() {
-  const router = useRouter()
-  const { perfil, loading } = usePerfil()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  useEffect(() => {
-    if (!loading && !ehAdmin(perfil)) {
-      router.replace("/dashboard")
-    }
-  }, [perfil, loading, router])
-
-  if (loading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground mt-2">Carregando...</p>
-        </div>
-      </div>
-    )
+  if (!user) {
+    redirect("/login")
   }
 
-  if (!ehAdmin(perfil)) {
-    return null
+  const { data: perfil } = await supabase
+    .from("perfis")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (perfil?.role !== "admin") {
+    redirect("/dashboard")
+  }
+
+  const [colunas, cards, filtros] = await Promise.all([
+    listarColunasOportunidades(),
+    listarCardsOportunidades(),
+    listarFiltrosDeCards(),
+  ])
+
+  // Agrupa filtros por card_id para passar ao CardsManager
+  const filtrosPorCard: Record<string, OportunidadeCardFiltro[]> = {}
+  for (const f of filtros) {
+    if (!filtrosPorCard[f.card_id]) filtrosPorCard[f.card_id] = []
+    filtrosPorCard[f.card_id].push(f)
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-muted-foreground">
-          Gerencie colunas, cards de métrica e perfis de acesso
-        </p>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Painel Administrativo</CardTitle>
-          <CardDescription>
-            As abas de configuração serão implementadas na Fase 7 do projeto.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Aqui o administrador poderá gerenciar: Gerador de Tabelas (colunas dinâmicas),
-            Cards de Métrica e Gráficos, Perfis e Acessos de usuários.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <ConfiguracoesClient
+      colunas={colunas}
+      cards={cards}
+      filtrosPorCard={filtrosPorCard}
+    />
   )
 }

@@ -6,9 +6,10 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { ThemeCustomizer } from "@/components/theme-customizer";
+import { SidebarConfigProvider } from "@/contexts/sidebar-context";
 import { useSidebarConfig } from "@/hooks/use-sidebar-config";
 
-export default function DashboardLayout({
+function DashboardLayoutInner({
   children,
 }: {
   children: React.ReactNode;
@@ -72,5 +73,17 @@ export default function DashboardLayout({
         onOpenChange={setThemeCustomizerOpen}
       />
     </SidebarProvider>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <SidebarConfigProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </SidebarConfigProvider>
   );
 }
